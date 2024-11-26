@@ -18,29 +18,52 @@ model User{
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
+  firstName String
+  lastName String
+  otherNames String?
+  birthdate String
+  gender String 
+  country String
   email String @unique
-  hash String
-  firstName String?
-  lastName String?
+  phoneNumber String?
+  address String?
+  profilePicture String?
 
-  bookmarks Bookmark[]
+
+  passwordHash String
+  passwordResetToken String?
+  passwordResetExpires DateTime?
+  passwordChangedAt DateTime @default(now())
+
+  // passwordChangedAt, accountActivationToken, accountActivationExpires, accountActivatedAt, and 6 more.
+
+  accountActivationToken String?
+  accountActivationExpires DateTime?
+  accountActivatedAt DateTime?
+  accountIsActivated Boolean @default(false)
+
+ 
+  phoneNumberIsActivated Boolean @default(false)
+  phoneNumberVerificationToken String?
+  phoneNumberVerificationTokenExpires DateTime?
+  phoneNumberVerificationCode String?
+  phoneNumberVerifiedAt DateTime?
+
+
+  mfaEnabled Boolean?
+  mfaType String @default("NONE")
+  mfaCode String?
+  mfaCodeExpiresAt DateTime?
+  
+  
+  role String
   
   @@map("users")
 }
 
-model Bookmark{
-  id Int @id @default(autoincrement())
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  title String
-  description String?
-  link String
-
-  userId Int
-  // user User @relation(fields: [userId], references: [id], onDelete: Cascade)
-  user User @relation(fields: [userId], references: [id])
-
-
-  @@map("bookmarks")
+model ServiceUser {
+  serviceId Int @id @default(autoincrement())
+  apiKey String
+  description String
+  serviceName String
 }
