@@ -83,3 +83,35 @@ Nest is an MIT-licensed open source project. It can grow thanks to the sponsors 
 ## License
 
 Nest is [MIT licensed](https://github.com/nestjs/nest/blob/master/LICENSE).
+
+# API Routes Documentation
+
+## **Roles and User Management**
+- **Sign Up (General)**: `POST /auth/sign-up`
+  - **Student**: `POST /auth/sign-up/student`
+  - **Course Creators**: `POST /auth/sign-up/course-creator`
+  - **Teaching Assistants**: `POST /auth/sign-up/teaching-assistant`
+  - **Admin**: `POST /auth/sign-up/admin`
+  - **Super Admin**: `POST /auth/sign-up/super-admin`
+
+---
+
+## **MFA (Multi-Factor Authentication)**
+- **Sign In**: `POST /auth/mfa/sign-in`
+- **Enable MFA**: `POST /auth/mfa/enable`
+- **Disable MFA**: `POST /auth/mfa/disable`
+- **Verify Phone Number**: `POST /auth/mfa/verify-phone`
+
+---
+
+## **Password Management**
+- **Forgot Password**: `POST /auth/forgot-password`
+- **Reset Password**: `POST /auth/reset-password`
+- **Update Password**: `PUT /auth/update-password`
+
+---
+
+## **Account Management**
+- **Activate Account**: `POST /auth/activate-account`
+- **Update Phone Number**: `PUT /auth/update-phone`
+- **Verify Phone Number**: `POST /auth/verify-phone`

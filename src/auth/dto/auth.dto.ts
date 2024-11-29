@@ -1,11 +1,11 @@
 import {
-  IsDate,
   IsEmail,
+  IsIn,
   IsNotEmpty,
   IsOptional,
   IsString,
 } from "class-validator";
-import { Gender } from "../../../types";
+import { Gender } from "types/types";
 
 export class AuthDto {
   @IsString()
@@ -24,7 +24,7 @@ export class AuthDto {
   @IsNotEmpty()
   birthdate: string;
 
-  @IsString()
+  @IsIn(["MALE", "FEMALE"])
   @IsNotEmpty()
   gender: Gender;
 
@@ -47,6 +47,20 @@ export class AuthDto {
   @IsString()
   @IsOptional()
   profilePicture: string;
+
+  @IsString()
+  @IsNotEmpty()
+  password: string;
+
+  @IsString()
+  @IsNotEmpty()
+  frontendBaseUrl: string;
+}
+
+export class SigninDto {
+  @IsEmail()
+  @IsNotEmpty()
+  email: string;
 
   @IsString()
   @IsNotEmpty()
