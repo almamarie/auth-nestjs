@@ -1,5 +1,13 @@
-import { Body, Controller, HttpCode, HttpStatus, Post } from '@nestjs/common';
-import { AuthService } from './auth.service';
+import {
+  Body,
+  Controller,
+  HttpCode,
+  HttpStatus,
+  Param,
+  Patch,
+  Post,
+} from "@nestjs/common";
+import { AuthService } from "./auth.service";
 import { AuthDto, SigninDto } from "./dto";
 import { Roles } from "../../types";
 
@@ -15,6 +23,12 @@ export class AuthController {
   @Post("signup/course-creator")
   courseCreatorSignup(@Body() dto: AuthDto) {
     return this.authService.signup(dto, Roles.COURSE_CREATOR);
+  }
+
+  @HttpCode(HttpStatus.OK)
+  @Patch("signup/activate-account/:token")
+  activateAccount(@Param("token") token: string) {
+    return this.authService.activateAccount(token);
   }
 
   @HttpCode(HttpStatus.OK)

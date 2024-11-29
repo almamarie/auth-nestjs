@@ -1,4 +1,9 @@
-import { ForbiddenException, Injectable, Logger } from "@nestjs/common";
+import {
+  BadRequestException,
+  ForbiddenException,
+  Injectable,
+  Logger,
+} from "@nestjs/common";
 import { PrismaService } from "../prisma/prisma.service";
 import { AuthDto, SigninDto } from "./dto";
 import * as argon from "argon2";
@@ -28,8 +33,11 @@ export class AuthService {
       delete userDto.frontendBaseUrl;
       delete userDto.password;
 
-      const { activationToken, accountActivationExpires } =
-        await this.createAccountActivationToken();
+      const {
+        activationToken,
+        accountActivationToken,
+        accountActivationExpires,
+      } = await this.createAccountActivationToken();
 
       const user = await this.prisma.user.create({
         data: {
@@ -37,7 +45,7 @@ export class AuthService {
           passwordHash: hash,
           role,
           accountActivationExpires,
-          accountActivationToken: activationToken,
+          accountActivationToken,
         },
       });
 
@@ -62,6 +70,40 @@ export class AuthService {
     }
   }
 
+  async activateAccount(token: string) {
+    const hashedToken = crypto.createHash("sha256").update(token).digest("hex");
+
+    this.logger.log(`Hashed token: ${hashedToken}\nToken: ${token}`);
+
+    const user = await this.prisma.user.findFirst({
+      where: {
+        accountActivationToken: hashedToken,
+        accountActivationExpires: {
+          gt: new Date(),
+        },
+      },
+    });
+
+    if (!user) throw new BadRequestException("Token is invalid or has expired");
+
+    if (!user.accountIsActivated) {
+      await this.prisma.user.update({
+        where: {
+          id: user.id,
+        },
+        data: {
+          accountIsActivated: true,
+          accountActivationToken: undefined,
+          accountActivationExpires: undefined,
+          accountActivatedAt: new Date(Date.now()),
+        },
+      });
+    }
+
+    this.logger.log("Account activated.");
+    return { message: "Account activated." };
+  }
+
   async signin(dto: SigninDto) {
     const user = await this.prisma.user.findUnique({
       where: {
@@ -79,18 +121,28 @@ export class AuthService {
     return this.signToken(user.id, user.email);
   }
 
-  async signToken(
+  private async signToken(
     userId: number,
-    email: string
+    role: string
   ): Promise<{ access_token: string }> {
+    this.logger.log("generating jwt...");
+    const duration = 60 * 60 * this.config.get<number>("JWT_DURATION");
+
     const payload = {
       sub: userId,
-      email,
+      iss: "https://sellz-backend.com",
+      aud: "https://sellz.com",
+      exp: Math.floor(Date.now() / 1000) + duration,
+      iat: Math.floor(Date.now() / 1000),
+      role: role,
     };
+
     const token = await this.jwt.signAsync(payload, {
-      expiresIn: "1h",
       secret: this.config.get("JWT_SECRET"),
     });
+
+    this.logger.log("Done generating jwt.");
+
     return { access_token: token };
   }
 
@@ -116,6 +168,7 @@ export class AuthService {
 
   private async createAccountActivationToken(): Promise<{
     activationToken: string;
+    accountActivationToken: string;
     accountActivationExpires: Date;
   }> {
     this.logger.log("Creating account activation token...");
@@ -126,19 +179,17 @@ export class AuthService {
       .update(activationToken)
       .digest("hex");
 
-    this.logger.log(
-      {
-        activationToken,
-        "this.account activation": accountActivationToken,
-      }
-      // this.passwordResetToken
-    );
+    this.logger.log({
+      activationToken,
+      "this.account activation": accountActivationToken,
+    });
 
     const accountActivationExpires = new Date(Date.now() + 60 * 60 * 1000); // days * mins * hrs * miliseconds
 
     this.logger.log("Done!");
     return {
       activationToken,
+      accountActivationToken,
       accountActivationExpires,
     };
   }
