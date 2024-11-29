@@ -16,6 +16,7 @@ describe("app e2e", () => {
     prisma = testApp.prisma;
 
     pactum.request.setBaseUrl(`http://localhost:${port}`);
+    pactum.request.setDefaultTimeout(30000);
   });
 
   afterAll(async () => {

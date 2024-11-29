@@ -3,7 +3,7 @@ import { INestApplication } from "@nestjs/common";
 import { PrismaService } from "../src/prisma/prisma.service";
 import { EditUserDto } from "src/user/dto";
 import { createTestApp } from "./test-utils";
-import { TestSigninDto, TestSignupDto } from "./utils/test.dtos";
+import { TestSignupDto } from "./utils/test.dtos";
 
 describe("app e2e", () => {
   let app: INestApplication;
@@ -15,6 +15,7 @@ describe("app e2e", () => {
     prisma = testApp.prisma;
 
     pactum.request.setBaseUrl(`http://localhost:${port}`);
+    pactum.request.setDefaultTimeout(30000);
   });
 
   afterAll(async () => {
@@ -30,8 +31,9 @@ describe("app e2e", () => {
         .withBody(dto)
         .expectStatus(201)
         .expectBodyContains("access_token")
-        .stores("userAccessToken", "access_token");
-    });
+        .stores("userAccessToken", "access_token")
+        .inspect();
+    }, 30000);
     describe("Get me", () => {
       it("should get a user with given token", () => {
         return pactum

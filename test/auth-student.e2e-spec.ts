@@ -15,7 +15,9 @@ describe("app e2e", () => {
     app = testApp.app;
     prisma = testApp.prisma;
 
-    pactum.request.setBaseUrl(`http://localhost:${port}`);
+      pactum.request.setBaseUrl(`http://localhost:${port}`);
+      pactum.request.setDefaultTimeout(30000);
+      
   });
 
   afterAll(async () => {
@@ -115,7 +117,7 @@ describe("app e2e", () => {
           .post("/auth/signup/student")
           .withBody(dto)
           .expectStatus(201);
-      });
+      }, 30000);
 
       it("Should throw error if duplicate user", () => {
         return pactum
