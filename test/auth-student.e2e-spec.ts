@@ -111,11 +111,12 @@ describe("app e2e", () => {
       });
     });
     describe("Sign up", () => {
+      const newDto = { ...dto, email: "student@example.com" };
       it("Should signup", () => {
         return pactum
           .spec()
           .post("/auth/signup/student")
-          .withBody(dto)
+          .withBody(newDto)
           .expectStatus(201);
       }, 30000);
 
@@ -123,7 +124,7 @@ describe("app e2e", () => {
         return pactum
           .spec()
           .post("/auth/signup/student")
-          .withBody(dto)
+          .withBody(newDto)
           .expectStatus(403);
       });
     });

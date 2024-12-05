@@ -8,7 +8,7 @@ import {
   Post,
 } from "@nestjs/common";
 import { AuthService } from "./auth.service";
-import { AuthDto, SigninDto } from "./dto";
+import { AuthDto, ForgotPasswordDto, SigninDto } from "./dto";
 import { Roles } from "../../types";
 
 @Controller("auth")
@@ -35,5 +35,11 @@ export class AuthController {
   @Post("signin")
   signin(@Body() dto: SigninDto) {
     return this.authService.signin(dto);
+  }
+
+  @HttpCode(HttpStatus.OK)
+  @Post("forgot-password")
+  forgotPassword(@Body() dto: ForgotPasswordDto) {
+    return this.authService.forgotPassword(dto);
   }
 }

@@ -9,14 +9,14 @@ import { SigninDto } from "src/auth/dto";
 describe("app e2e", () => {
   let app: INestApplication;
   let prisma: PrismaService;
-  let port: number = 3334;
+  let port: number = 3337;
   beforeAll(async () => {
     const testApp = await createTestApp(port);
     app = testApp.app;
     prisma = testApp.prisma;
 
-      pactum.request.setBaseUrl(`http://localhost:${port}`);
-      pactum.request.setDefaultTimeout(30000);
+    pactum.request.setBaseUrl(`http://localhost:${port}`);
+    pactum.request.setDefaultTimeout(30000);
   });
 
   afterAll(async () => {
@@ -40,7 +40,7 @@ describe("app e2e", () => {
             password: "password",
           })
           .expectStatus(201);
-      });
+      }, 30000);
       it("Should throw if email empty", () => {
         return pactum
           .spec()

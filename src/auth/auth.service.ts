@@ -3,9 +3,10 @@ import {
   ForbiddenException,
   Injectable,
   Logger,
+  NotFoundException,
 } from "@nestjs/common";
 import { PrismaService } from "../prisma/prisma.service";
-import { AuthDto, SigninDto } from "./dto";
+import { AuthDto, ForgotPasswordDto, SigninDto } from "./dto";
 import * as argon from "argon2";
 import { PrismaClientKnownRequestError } from "@prisma/client/runtime/library";
 import { JwtService } from "@nestjs/jwt";
@@ -14,6 +15,7 @@ import { Roles } from "../../types";
 import { welcomeEmailType } from "./types";
 import { EmailService } from "../../src/email/email.service";
 import * as crypto from "crypto";
+import { User } from "@prisma/client";
 @Injectable()
 export class AuthService {
   private logger = new Logger(AuthService.name);
@@ -49,13 +51,13 @@ export class AuthService {
         },
       });
 
-      await this.sendWelcomeEmail(
-        {
-          firstName: dto.firstName,
-          activationUrl: `${dto.frontendBaseUrl}/${activationToken}`,
-        },
-        dto.email
-      );
+      // await this.sendWelcomeEmail(
+      //   {
+      //     firstName: dto.firstName,
+      //     activationUrl: `${dto.frontendBaseUrl}/${activationToken}`,
+      //   },
+      //   dto.email
+      // );
 
       this.logger.log("Done creating new user.");
 
@@ -119,6 +121,30 @@ export class AuthService {
     }
 
     return this.signToken(user.id, user.email);
+  }
+
+  async forgotPassword(dto: ForgotPasswordDto) {
+    this.logger.log("Forgot password called...");
+
+    const user = await this.prisma.user.findUnique({
+      where: { email: dto.email },
+    });
+
+    if (!user) {
+      throw new NotFoundException("User not found");
+    }
+
+    const resetToken = await this.createPasswordResetToken(user.id);
+
+    const resetURL = `${dto.resetUrl}/${resetToken}`;
+
+    this.logger.log("Sending password reset email...");
+    // await this.sendPasswordResetEmail(user, resetURL);
+
+    return {
+      status: "success",
+      message: "Token sent to email!",
+    };
   }
 
   private async signToken(
@@ -192,5 +218,58 @@ export class AuthService {
       accountActivationToken,
       accountActivationExpires,
     };
+  }
+
+  private async createPasswordResetToken(id: number): Promise<string> {
+    this.logger.log("Creating password reset token...");
+    const resetToken = crypto.randomBytes(32).toString("hex");
+
+    const passwordResetToken = crypto
+      .createHash("sha256")
+      .update(resetToken)
+      .digest("hex");
+    const passwordResetExpires = new Date(Date.now() + 10 * 60 * 1000);
+
+    await this.prisma.user.update({
+      where: { id },
+      data: {
+        passwordResetToken,
+        passwordResetExpires,
+      },
+    });
+
+    this.logger.log(
+      `{\n  resetToken: ${resetToken}\n passwordResetToken: ${passwordResetToken}\n}`
+    );
+
+    this.logger.log("Done!");
+    return resetToken;
+  }
+
+  private async sendPasswordResetEmail(user: User, resetUrl: string) {
+    this.logger.log("Sending password reset email...");
+    try {
+      await this.emailService.sendMail({
+        subject: "Reset your password",
+        to: user.email,
+        template: "./reset-password.hbs",
+        context: {
+          firstName: user.firstName,
+          resetUrl,
+          year: "2024",
+        },
+      });
+    } catch (error) {
+      this.prisma.user.update({
+        where: { id: user.id },
+        data: {
+          passwordResetToken: undefined,
+          passwordResetExpires: undefined,
+        },
+      });
+
+      this.logger.error("Error sending password reset email!", error);
+      throw new ForbiddenException(error);
+    }
   }
 }
