@@ -4,9 +4,15 @@ import {
   Injectable,
   Logger,
   NotFoundException,
+  UnauthorizedException,
 } from "@nestjs/common";
 import { PrismaService } from "../prisma/prisma.service";
-import { AuthDto, ForgotPasswordDto, SigninDto } from "./dto";
+import {
+  AuthDto,
+  ForgotPasswordDto,
+  SigninDto,
+  UpdatePasswordDto,
+} from "./dto";
 import * as argon from "argon2";
 import { PrismaClientKnownRequestError } from "@prisma/client/runtime/library";
 import { JwtService } from "@nestjs/jwt";
@@ -145,6 +151,28 @@ export class AuthService {
       status: "success",
       message: "Token sent to email!",
     };
+  }
+
+  async updatePassword(
+    dto: UpdatePasswordDto,
+    user: User
+  ): Promise<{ access_token: string }> {
+    if (!(await argon.verify(user.passwordHash, dto.currentPassword))) {
+      throw new UnauthorizedException("Invalid Credentials");
+    }
+
+    if (dto.newPassword !== dto.confirmPassword) {
+      throw new BadRequestException("Passwords do not match");
+    }
+
+    const hash = await argon.hash(dto.newPassword);
+
+    await this.prisma.user.update({
+      where: { id: user.id },
+      data: { passwordHash: hash },
+    });
+
+    return this.signToken(user.id, user.email);
   }
 
   private async signToken(

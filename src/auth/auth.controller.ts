@@ -1,15 +1,27 @@
 import {
   Body,
   Controller,
+  ForbiddenException,
   HttpCode,
   HttpStatus,
   Param,
   Patch,
   Post,
+  Put,
+  UnauthorizedException,
+  UseGuards,
 } from "@nestjs/common";
 import { AuthService } from "./auth.service";
-import { AuthDto, ForgotPasswordDto, SigninDto } from "./dto";
+import {
+  AuthDto,
+  ForgotPasswordDto,
+  SigninDto,
+  UpdatePasswordDto,
+} from "./dto";
 import { Roles } from "../../types";
+import { User } from "@prisma/client";
+import { GetUser } from "./decorator";
+import { JwtGuard } from "./guard";
 
 @Controller("auth")
 export class AuthController {
@@ -41,5 +53,14 @@ export class AuthController {
   @Post("forgot-password")
   forgotPassword(@Body() dto: ForgotPasswordDto) {
     return this.authService.forgotPassword(dto);
+  }
+
+  @UseGuards(JwtGuard)
+  @HttpCode(HttpStatus.OK)
+  @Put("update-password")
+  updatePassword(@Body() dto: UpdatePasswordDto, @GetUser() user: User) {
+    if (!user) throw new UnauthorizedException("Invalid token");
+    // return user;
+    return this.authService.updatePassword(dto, user);
   }
 }
